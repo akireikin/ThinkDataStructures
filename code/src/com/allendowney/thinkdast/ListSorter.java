@@ -60,15 +60,15 @@ public class ListSorter<T> {
 	 * @return
 	 */
 	public List<T> mergeSort(List<T> list, Comparator<T> comparator) {
-		int size = list.size();
-		if (size <= 1) {
+		// Out of the recursion
+		if (list.size() == 1) {
 			return list;
 		}
-		// make two lists with half the elements each.
-		List<T> first = mergeSort(new LinkedList<T>(list.subList(0, size/2)), comparator);
-		List<T> second = mergeSort(new LinkedList<T>(list.subList(size/2, size)), comparator);
-		
-		return merge(first, second, comparator);
+
+		int newSize = list.size() / 2;
+		List<T> left = new LinkedList<>(list.subList(0, newSize));
+		List<T> right = new LinkedList<>(list.subList(newSize, list.size()));
+		return merge(mergeSort(left, comparator), mergeSort(right, comparator), comparator);
 	}
 
 	/**
@@ -80,15 +80,18 @@ public class ListSorter<T> {
 	 * @return
 	 */
 	private List<T> merge(List<T> first, List<T> second, Comparator<T> comparator) {
-		// NOTE: using LinkedList is important because we need to 
-		// remove from the beginning in constant time
-		List<T> result = new LinkedList<T>();
-		int total = first.size() + second.size();
-		for (int i=0; i<total; i++) {
-			List<T> winner = pickWinner(first, second, comparator);
-			result.add(winner.remove(0));
+		List<T> merged = new LinkedList<>();
+		int overallSize = first.size() + second.size();
+		while (merged.size() < overallSize) {
+			if (first.size() == 0) {
+				merged.add(second.remove(0));
+			} else if (second.size() == 0) {
+				merged.add(first.remove(0));
+			} else {
+				merged.add(comparator.compare(first.get(0), second.get(0)) < 0 ? first.remove(0) : second.remove(0));
+			}
 		}
-		return result;
+		return merged;
 	}
 
 	/**
@@ -102,20 +105,7 @@ public class ListSorter<T> {
 	 * @return
 	 */
 	private List<T> pickWinner(List<T> first, List<T> second, Comparator<T> comparator) {
-		if (first.size() == 0) {
-			return second;
-		}
-		if (second.size() == 0) {
-			return first;
-		}
-		int res = comparator.compare(first.get(0), second.get(0));
-		if (res < 0) {
-			return first;
-		}
-		if (res > 0) {
-			return second;
-		}
-		return first;
+		return null;
 	}
 
 	/**
@@ -126,11 +116,12 @@ public class ListSorter<T> {
 	 * @return
 	 */
 	public void heapSort(List<T> list, Comparator<T> comparator) {
-		PriorityQueue<T> heap = new PriorityQueue<T>(list.size(), comparator);
-		heap.addAll(list);
-		list.clear();
-		while (!heap.isEmpty()) {
-			list.add(heap.poll());
+		MyHeap<T> heap = new MyHeap<T>();
+		for (T element: list) {
+			heap.push(element);
+		}
+		for (int i = 0; i < list.size(); i++) {
+			list.set(i, heap.poll());
 		}
 	}
 
@@ -145,23 +136,21 @@ public class ListSorter<T> {
 	 * @return
 	 */
 	public List<T> topK(int k, List<T> list, Comparator<T> comparator) {
-		PriorityQueue<T> heap = new PriorityQueue<T>(list.size(), comparator);
+		MyHeap<T> heap = new MyHeap<T>();
 		for (T element: list) {
 			if (heap.size() < k) {
-				heap.offer(element);
-				continue;
-			}
-			int cmp = comparator.compare(element, heap.peek());
-			if (cmp > 0) {
+				heap.push(element);
+			} else if (comparator.compare(heap.peek(), element) < 0) {
 				heap.poll();
-				heap.offer(element);
+				heap.push(element);
 			}
 		}
-		List<T> res = new ArrayList<T>();
-		while (!heap.isEmpty()) {
-			res.add(heap.poll());
+
+		List<T> result = new LinkedList<T>();
+		for (int i = 0; i < k; i++) {
+			result.add(heap.poll());
 		}
-		return res;
+		return result;
 	}
 
 	

@@ -1,12 +1,7 @@
 package com.allendowney.thinkdast;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import redis.clients.jedis.Jedis;
@@ -60,8 +55,12 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch or(WikiSearch that) {
-		// TODO: FILL THIS IN!
-		return null;
+		Map<String, Integer> resultMap = new HashMap<>(map);
+		for (Entry<String, Integer> entry: that.map.entrySet()) {
+			resultMap.put(entry.getKey(), entry.getValue() + (resultMap.getOrDefault(entry.getKey(), 0)));
+		}
+
+		return new WikiSearch(resultMap);
 	}
 
 	/**
@@ -71,8 +70,14 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch and(WikiSearch that) {
-		// TODO: FILL THIS IN!
-		return null;
+		Map<String, Integer> resultMap = new HashMap<>();
+		for (Entry<String, Integer> entry: map.entrySet()) {
+			if (that.map.containsKey(entry.getKey())) {
+				resultMap.put(entry.getKey(), entry.getValue() + that.map.get(entry.getKey()));
+			}
+		}
+
+		return new WikiSearch(resultMap);
 	}
 
 	/**
@@ -82,8 +87,12 @@ public class WikiSearch {
 	 * @return New WikiSearch object.
 	 */
 	public WikiSearch minus(WikiSearch that) {
-		// TODO: FILL THIS IN!
-		return null;
+		Map<String, Integer> resultMap = new HashMap<>(map);
+		for (Entry<String, Integer> entry: that.map.entrySet()) {
+			resultMap.remove(entry.getKey());
+		}
+
+		return new WikiSearch(resultMap);
 	}
 
 	/**
@@ -104,8 +113,10 @@ public class WikiSearch {
 	 * @return List of entries with URL and relevance.
 	 */
 	public List<Entry<String, Integer>> sort() {
-		// TODO: FILL THIS IN!
-		return null;
+		List<Entry<String, Integer>> list = new LinkedList<>(map.entrySet());
+		list.sort(Comparator.comparingInt(Entry::getValue));
+
+		return list;
 	}
 
 
@@ -118,6 +129,14 @@ public class WikiSearch {
 	 */
 	public static WikiSearch search(String term, JedisIndex index) {
 		Map<String, Integer> map = index.getCounts(term);
+
+		// Adjust ranks
+		int documentCount = index.urlSetKeys().size();
+		for (Entry<String, Integer> entry: map.entrySet()) {
+			int idf = (int) Math.round(Math.log((float) documentCount / (float) map.size()));
+			map.put(entry.getKey(), entry.getValue() * idf);
+		}
+
 		return new WikiSearch(map);
 	}
 

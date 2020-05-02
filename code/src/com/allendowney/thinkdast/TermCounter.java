@@ -20,10 +20,12 @@ public class TermCounter {
 
 	private Map<String, Integer> map;
 	private String label;
+	private Integer size;
 
 	public TermCounter(String label) {
 		this.label = label;
 		this.map = new HashMap<String, Integer>();
+		this.size = 0;
 	}
 
 	public String getLabel() {
@@ -36,8 +38,7 @@ public class TermCounter {
 	 * @return
 	 */
 	public int size() {
-		// TODO: FILL THIS IN!
-		return 0;
+		return size;
 	}
 
 	/**
@@ -100,6 +101,9 @@ public class TermCounter {
 	 * @param count
 	 */
 	public void put(String term, int count) {
+		// Update size
+		size += count - get(term);
+
 		map.put(term, count);
 	}
 

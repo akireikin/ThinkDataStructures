@@ -167,7 +167,24 @@ public class MyTreeMapTest {
 	 */
 	@Test
 	public void testRemove() {
-		// nothing to test, since this method is not implemented
+		// Remove root
+		map.remove("08");
+		assertThat(map.size(), is(8));
+		assertThat(map.get("08"), nullValue());
+		// Not leave exists
+		assertThat(map.get("06"), is(6));
+
+		// Remove not leave
+		map.remove("06");
+		assertThat(map.size(), is(7));
+		assertThat(map.get("06"), nullValue());
+		// Leave exists
+		assertThat(map.get("04"), is(4));
+
+		// Remove leave
+		map.remove("04");
+		assertThat(map.size(), is(6));
+		assertThat(map.get("04"), nullValue());
 	}
 
 	/**

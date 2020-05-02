@@ -3,13 +3,7 @@
  */
 package com.allendowney.thinkdast;
 
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Implementation of a Map using a binary search tree.
@@ -71,7 +65,16 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 		@SuppressWarnings("unchecked")
 		Comparable<? super K> k = (Comparable<? super K>) target;
 
-		// TODO: FILL THIS IN!
+		Node node = root;
+		while (node != null) {
+			int comparison = k.compareTo(node.key);
+			if (comparison == 0) {
+				return node;
+			}
+
+			node = comparison < 0 ? node.left : node.right;
+		}
+
 		return null;
 	}
 
@@ -95,8 +98,11 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 	}
 
 	private boolean containsValueHelper(Node node, Object target) {
-		// TODO: FILL THIS IN!
-		return false;
+		if (node == null) {
+			return false;
+		}
+
+		return equals(target, node.value) || containsValueHelper(node.left, target) || containsValueHelper(node.right, target);
 	}
 
 	@Override
@@ -121,7 +127,20 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 	@Override
 	public Set<K> keySet() {
 		Set<K> set = new LinkedHashSet<K>();
-		// TODO: FILL THIS IN!
+		Deque<Node> stack = new LinkedList<Node>();
+		Node current = root;
+
+		while (!stack.isEmpty() || current != null) {
+			if (current != null) {
+				stack.push(current);
+				current = current.left;
+			} else {
+				current = stack.pop();
+				set.add(current.key);
+				current = current.right;
+			}
+		}
+
 		return set;
 	}
 
@@ -139,7 +158,30 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 	}
 
 	private V putHelper(Node node, K key, V value) {
-		// TODO: FILL THIS IN!
+		@SuppressWarnings("unchecked")
+		int comparison = ((Comparable<? super K>) key).compareTo(node.key);
+		if (comparison == 0) {
+			V oldValue = node.value;
+			node.value = value;
+			return oldValue;
+		}
+
+		if (comparison < 0) {
+			if (node.left == null) {
+				node.left = new Node(key, value);
+				size++;
+			} else {
+				return putHelper(node.left, key, value);
+			}
+		} else {
+			if (node.right == null) {
+				node.right = new Node(key, value);
+				size++;
+			} else {
+				return putHelper(node.right, key, value);
+			}
+		}
+
 		return null;
 	}
 
@@ -152,8 +194,104 @@ public class MyTreeMap<K, V> implements Map<K, V> {
 
 	@Override
 	public V remove(Object key) {
-		// OPTIONAL TODO: FILL THIS IN!
-		throw new UnsupportedOperationException();
+		// some implementations can handle null as a key, but not this one
+		if (key == null) {
+			throw new IllegalArgumentException();
+		}
+
+		// something to make the compiler happy
+		@SuppressWarnings("unchecked")
+		Comparable<? super K> k = (Comparable<? super K>) key;
+
+		// Empty tree
+		if (root == null) {
+			return null;
+		}
+
+		// Find node, saving its parent
+		Node parent = null;
+		Node current = root;
+		while (true) {
+			int comparison = k.compareTo(current.key);
+			if (comparison == 0) {
+				// Found
+				break;
+			}
+
+			parent = current;
+			current = comparison < 0 ? current.left : current.right;
+			if (current == null) {
+				// Not found
+				return null;
+			}
+		}
+
+		// Leave - just delete
+		if (current.left == null && current.right == null) {
+			if (parent == null) {
+				root = null;
+			} else if (parent.left == current) {
+				parent.left = null;
+			} else {
+				parent.right = null;
+			}
+		}
+
+		// Node without left just collapse
+		if (current.left == null && current.right != null) {
+			if (parent == null) {
+				root = current.right;
+			} else if (parent.left == current) {
+				parent.left = current.right;
+			} else {
+				parent.right = current.right;
+			}
+		}
+
+		// Node without right just collapse
+		if (current.left != null && current.right == null) {
+			if (parent == null) {
+				root = current.left;
+			} else if (parent.left == current) {
+				parent.left = current.left;
+			} else {
+				parent.right = current.left;
+			}
+		}
+
+		// Node with both children requires rebalance
+		if (current.left != null && current.right != null) {
+			// Find minimum value in right subtree
+			Node min = current.right;
+
+			// If root of right subtree is min, collapse it
+			if (min.left == null) {
+				current.right = min.right;
+			} else {
+				// Otherwise find in min always using left pointers
+				// Collapse when found
+				Node parentOfMin;
+				do {
+					parentOfMin = min;
+					min = min.left;
+				} while (min.left != null);
+				parentOfMin.left = min.right;
+			}
+
+			// Replace current with new min
+			min.left = current.left;
+			min.right = current.right;
+			if (parent == null) {
+				root = min;
+			} else if (parent.left == current) {
+				parent.left = min;
+			} else {
+				parent.right = min;
+			}
+		}
+		size--;
+
+		return current.value;
 	}
 
 	@Override
